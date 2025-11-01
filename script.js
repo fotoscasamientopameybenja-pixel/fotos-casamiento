@@ -13,11 +13,43 @@ const galleryGrid = document.getElementById('galleryGrid');
 const photoCount = document.getElementById('photoCount');
 const clearAllBtn = document.getElementById('clearAllBtn');
 
+// IndexedDB
+let db = null;
+const DB_NAME = 'WeddingGalleryDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'photos';
+
 // Inicialización
-document.addEventListener('DOMContentLoaded', () => {
-    loadGallery();
+document.addEventListener('DOMContentLoaded', async () => {
+    await initDB();
+    await loadGallery();
     setupEventListeners();
 });
+
+// Inicializar IndexedDB
+function initDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        
+        request.onerror = () => {
+            console.error('Error al abrir IndexedDB');
+            reject(request.error);
+        };
+        
+        request.onsuccess = () => {
+            db = request.result;
+            resolve();
+        };
+        
+        request.onupgradeneeded = (event) => {
+            db = event.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                const objectStore = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: false });
+                objectStore.createIndex('date', 'date', { unique: false });
+            }
+        };
+    });
+}
 
 // Configurar event listeners
 function setupEventListeners() {
@@ -142,55 +174,69 @@ function updatePreviewIndices() {
 }
 
 // Confirmar subida
-function handleConfirmUpload() {
+async function handleConfirmUpload() {
     if (selectedFiles.length === 0) return;
     
     let processedCount = 0;
     const totalFiles = selectedFiles.length;
+    const savePromises = [];
     
     selectedFiles.forEach((file, index) => {
         const reader = new FileReader();
-        reader.onload = (e) => {
-            const photoData = {
-                id: Date.now() + Math.random() + index,
-                dataUrl: e.target.result,
-                name: file.name,
-                date: new Date().toISOString()
-            };
-            savePhotoToGallery(photoData);
-            
-            processedCount++;
-            // Cuando todas las fotos se hayan procesado, recargar la galería
-            if (processedCount === totalFiles) {
-                // Limpiar vista previa
-                selectedFiles = [];
-                previewContainer.innerHTML = '';
-                previewSection.style.display = 'none';
-                fileInput.value = '';
+        reader.onload = async (e) => {
+            try {
+                const photoData = {
+                    id: Date.now() + Math.random() + index,
+                    dataUrl: e.target.result,
+                    name: file.name,
+                    date: new Date().toISOString()
+                };
                 
-                // Mostrar mensaje de éxito
-                showNotification('¡Fotos subidas correctamente!');
+                await savePhotoToGallery(photoData);
                 
-                // Recargar galería después de que todas se hayan guardado
-                loadGallery();
-                
-                // Hacer scroll suave hacia la galería
-                setTimeout(() => {
-                    document.querySelector('.gallery-section').scrollIntoView({ 
-                        behavior: 'smooth', 
-                        block: 'start' 
-                    });
-                }, 100);
+                processedCount++;
+                // Cuando todas las fotos se hayan procesado, recargar la galería
+                if (processedCount === totalFiles) {
+                    // Limpiar vista previa
+                    selectedFiles = [];
+                    previewContainer.innerHTML = '';
+                    previewSection.style.display = 'none';
+                    fileInput.value = '';
+                    
+                    // Mostrar mensaje de éxito
+                    showNotification('¡Fotos subidas correctamente!');
+                    
+                    // Recargar galería después de que todas se hayan guardado
+                    await loadGallery();
+                    
+                    // Hacer scroll suave hacia la galería
+                    setTimeout(() => {
+                        document.querySelector('.gallery-section').scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'start' 
+                        });
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('Error al guardar foto:', error);
+                processedCount++;
+                if (processedCount === totalFiles) {
+                    selectedFiles = [];
+                    previewContainer.innerHTML = '';
+                    previewSection.style.display = 'none';
+                    fileInput.value = '';
+                    await loadGallery();
+                }
             }
         };
-        reader.onerror = () => {
+        reader.onerror = async () => {
             processedCount++;
             if (processedCount === totalFiles) {
                 selectedFiles = [];
                 previewContainer.innerHTML = '';
                 previewSection.style.display = 'none';
                 fileInput.value = '';
-                loadGallery();
+                await loadGallery();
             }
         };
         reader.readAsDataURL(file);
@@ -207,20 +253,55 @@ function handleCancelUpload() {
 
 // Guardar foto en la galería
 function savePhotoToGallery(photoData) {
-    let gallery = getGalleryFromStorage();
-    gallery.push(photoData);
-    localStorage.setItem('weddingGallery', JSON.stringify(gallery));
+    return new Promise((resolve, reject) => {
+        if (!db) {
+            console.error('IndexedDB no está inicializado');
+            reject('DB no inicializada');
+            return;
+        }
+        
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        
+        const request = store.add(photoData);
+        
+        request.onsuccess = () => {
+            resolve();
+        };
+        
+        request.onerror = () => {
+            console.error('Error al guardar foto');
+            reject(request.error);
+        };
+    });
 }
 
-// Obtener galería del storage
-function getGalleryFromStorage() {
-    const gallery = localStorage.getItem('weddingGallery');
-    return gallery ? JSON.parse(gallery) : [];
+// Obtener todas las fotos del storage
+async function getGalleryFromStorage() {
+    return new Promise((resolve, reject) => {
+        if (!db) {
+            resolve([]);
+            return;
+        }
+        
+        const transaction = db.transaction([STORE_NAME], 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.getAll();
+        
+        request.onsuccess = () => {
+            resolve(request.result || []);
+        };
+        
+        request.onerror = () => {
+            console.error('Error al obtener fotos');
+            resolve([]);
+        };
+    });
 }
 
 // Cargar galería
-function loadGallery() {
-    const gallery = getGalleryFromStorage();
+async function loadGallery() {
+    const gallery = await getGalleryFromStorage();
     
     if (gallery.length === 0) {
         galleryGrid.innerHTML = '<div class="empty-gallery"><p>No hay fotos aún. ¡Sube tu primera foto para comenzar!</p></div>';
@@ -267,20 +348,56 @@ function createGalleryItem(photo, index) {
 }
 
 // Eliminar foto de la galería
-function deletePhotoFromGallery(index) {
-    let gallery = getGalleryFromStorage();
-    gallery.splice(index, 1);
-    localStorage.setItem('weddingGallery', JSON.stringify(gallery));
-    loadGallery();
-    showNotification('Foto eliminada');
+async function deletePhotoFromGallery(index) {
+    try {
+        const gallery = await getGalleryFromStorage();
+        const photoToDelete = gallery[index];
+        
+        if (!photoToDelete || !photoToDelete.id) {
+            console.error('No se encontró la foto para eliminar');
+            return;
+        }
+        
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.delete(photoToDelete.id);
+        
+        request.onsuccess = async () => {
+            await loadGallery();
+            showNotification('Foto eliminada');
+        };
+        
+        request.onerror = () => {
+            console.error('Error al eliminar foto');
+            showNotification('Error al eliminar la foto');
+        };
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error al eliminar la foto');
+    }
 }
 
 // Eliminar todas las fotos
-function handleClearAll() {
+async function handleClearAll() {
     if (confirm('¿Estás seguro de que quieres eliminar todas las fotos? Esta acción no se puede deshacer.')) {
-        localStorage.removeItem('weddingGallery');
-        loadGallery();
-        showNotification('Todas las fotos han sido eliminadas');
+        try {
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.clear();
+            
+            request.onsuccess = async () => {
+                await loadGallery();
+                showNotification('Todas las fotos han sido eliminadas');
+            };
+            
+            request.onerror = () => {
+                console.error('Error al eliminar todas las fotos');
+                showNotification('Error al eliminar las fotos');
+            };
+        } catch (error) {
+            console.error('Error:', error);
+            showNotification('Error al eliminar las fotos');
+        }
     }
 }
 
