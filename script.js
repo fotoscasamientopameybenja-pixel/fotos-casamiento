@@ -21,6 +21,13 @@ const cancelBtn = document.getElementById('cancelBtn');
 const galleryGrid = document.getElementById('galleryGrid');
 const photoCount = document.getElementById('photoCount');
 const clearAllBtn = document.getElementById('clearAllBtn');
+const selectModeBtn = document.getElementById('selectModeBtn');
+const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+const cancelSelectBtn = document.getElementById('cancelSelectBtn');
+
+// Modo de selección
+let isSelectMode = false;
+let selectedPhotos = [];
 
 // IndexedDB
 let db = null;
@@ -90,6 +97,17 @@ function setupEventListeners() {
     confirmBtn.addEventListener('click', handleConfirmUpload);
     cancelBtn.addEventListener('click', handleCancelUpload);
     clearAllBtn.addEventListener('click', handleClearAll);
+    
+    // Botones de selección
+    if (selectModeBtn) {
+        selectModeBtn.addEventListener('click', enableSelectMode);
+    }
+    if (deleteSelectedBtn) {
+        deleteSelectedBtn.addEventListener('click', handleDeleteSelected);
+    }
+    if (cancelSelectBtn) {
+        cancelSelectBtn.addEventListener('click', disableSelectMode);
+    }
     
     // Modal de agradecimiento
     const thankYouModal = document.getElementById('thankYouModal');
@@ -445,17 +463,24 @@ async function loadGallery() {
         galleryGrid.innerHTML = '<div class="empty-gallery"><p>No hay fotos aún. ¡Sube tu primera foto para comenzar!</p></div>';
         photoCount.textContent = '0 fotos';
         clearAllBtn.style.display = 'none';
+        selectModeBtn.style.display = 'none';
         return;
     }
     
     galleryGrid.innerHTML = '';
     photoCount.textContent = `${gallery.length} ${gallery.length === 1 ? 'foto' : 'fotos'}`;
     clearAllBtn.style.display = 'block';
+    selectModeBtn.style.display = 'block';
     
     gallery.forEach((photo, index) => {
         const galleryItem = createGalleryItem(photo, index);
         galleryGrid.appendChild(galleryItem);
     });
+    
+    // Actualizar estado de selección si está activo
+    if (isSelectMode) {
+        updateSelectModeUI();
+    }
 }
 
 // Crear elemento de galería
@@ -464,24 +489,52 @@ function createGalleryItem(photo, index) {
     div.className = 'gallery-item';
     div.dataset.photoIndex = index;
     
+    // Checkbox para modo selección
+    const checkbox = document.createElement('div');
+    checkbox.className = 'select-checkbox';
+    checkbox.onclick = (e) => {
+        e.stopPropagation();
+        togglePhotoSelection(index);
+    };
+    
     const img = document.createElement('img');
     img.src = photo.url || photo.dataUrl;
     img.alt = photo.name || 'Foto';
     const imageSrc = photo.url || photo.dataUrl;
-    img.onclick = () => openModal(imageSrc);
+    
+    // Cambiar comportamiento según modo
+    if (isSelectMode) {
+        img.onclick = (e) => {
+            e.stopPropagation();
+            togglePhotoSelection(index);
+        };
+    } else {
+        img.onclick = () => openModal(imageSrc);
+    }
     
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'delete-btn';
     deleteBtn.innerHTML = '×';
     deleteBtn.onclick = (e) => {
         e.stopPropagation();
-        if (confirm('¿Estás seguro de que quieres eliminar esta foto?')) {
-            deletePhotoFromGallery(index);
+        if (!isSelectMode) {
+            if (confirm('¿Estás seguro de que quieres eliminar esta foto?')) {
+                deletePhotoFromGallery(index);
+            }
         }
     };
     
+    div.appendChild(checkbox);
     div.appendChild(img);
     div.appendChild(deleteBtn);
+    
+    // Actualizar estado visual según modo
+    if (isSelectMode) {
+        div.classList.add('select-mode');
+        if (selectedPhotos.includes(index)) {
+            div.classList.add('selected');
+        }
+    }
     
     return div;
 }
@@ -539,6 +592,166 @@ function deleteFromLocalStorage(index) {
     try {
         let gallery = JSON.parse(localStorage.getItem('weddingGallery') || '[]');
         gallery.splice(index, 1);
+        localStorage.setItem('weddingGallery', JSON.stringify(gallery));
+    } catch (error) {
+        console.error('Error al eliminar de localStorage:', error);
+    }
+}
+
+// Activar modo de selección
+function enableSelectMode() {
+    isSelectMode = true;
+    selectedPhotos = [];
+    updateSelectModeUI();
+    updateGalleryItems();
+}
+
+// Desactivar modo de selección
+function disableSelectMode() {
+    isSelectMode = false;
+    selectedPhotos = [];
+    updateSelectModeUI();
+    updateGalleryItems();
+}
+
+// Actualizar UI del modo de selección
+function updateSelectModeUI() {
+    if (isSelectMode) {
+        selectModeBtn.style.display = 'none';
+        deleteSelectedBtn.style.display = selectedPhotos.length > 0 ? 'block' : 'none';
+        cancelSelectBtn.style.display = 'block';
+        clearAllBtn.style.display = 'none';
+    } else {
+        selectModeBtn.style.display = 'block';
+        deleteSelectedBtn.style.display = 'none';
+        cancelSelectBtn.style.display = 'none';
+        clearAllBtn.style.display = galleryGrid.children.length > 0 ? 'block' : 'none';
+    }
+}
+
+// Actualizar items de galería para modo selección
+function updateGalleryItems() {
+    const items = galleryGrid.querySelectorAll('.gallery-item');
+    items.forEach((item, index) => {
+        const photoIndex = parseInt(item.dataset.photoIndex);
+        const img = item.querySelector('img');
+        const imageSrc = img.src;
+        
+        if (isSelectMode) {
+            item.classList.add('select-mode');
+            img.onclick = (e) => {
+                e.stopPropagation();
+                togglePhotoSelection(photoIndex);
+            };
+            
+            if (selectedPhotos.includes(photoIndex)) {
+                item.classList.add('selected');
+            } else {
+                item.classList.remove('selected');
+            }
+        } else {
+            item.classList.remove('select-mode', 'selected');
+            img.onclick = () => openModal(imageSrc);
+        }
+    });
+}
+
+// Alternar selección de foto
+function togglePhotoSelection(index) {
+    const photoIndex = parseInt(index);
+    const itemIndex = selectedPhotos.indexOf(photoIndex);
+    
+    if (itemIndex > -1) {
+        selectedPhotos.splice(itemIndex, 1);
+    } else {
+        selectedPhotos.push(photoIndex);
+    }
+    
+    updateSelectModeUI();
+    updateGalleryItems();
+}
+
+// Eliminar fotos seleccionadas
+async function handleDeleteSelected() {
+    if (selectedPhotos.length === 0) return;
+    
+    const count = selectedPhotos.length;
+    const message = count === 1 
+        ? '¿Estás seguro de que quieres eliminar esta foto?'
+        : `¿Estás seguro de que quieres eliminar ${count} fotos?`;
+    
+    if (!confirm(message)) return;
+    
+    try {
+        const gallery = await getGalleryFromStorage();
+        const photosToDelete = selectedPhotos.map(index => gallery[index]).filter(Boolean);
+        
+        if (photosToDelete.length === 0) {
+            showNotification('No se encontraron fotos para eliminar');
+            disableSelectMode();
+            return;
+        }
+        
+        // Eliminar fotos usando sus IDs o índices
+        let successCount = 0;
+        for (const photo of photosToDelete) {
+            try {
+                // Intentar usar IndexedDB primero
+                if (db && photo.id) {
+                    const transaction = db.transaction([STORE_NAME], 'readwrite');
+                    const store = transaction.objectStore(STORE_NAME);
+                    await new Promise((resolve, reject) => {
+                        const request = store.delete(photo.id);
+                        request.onsuccess = () => resolve();
+                        request.onerror = () => {
+                            // Fallback a localStorage
+                            deleteFromLocalStorageByPhoto(photo);
+                            resolve();
+                        };
+                    });
+                } else {
+                    // Usar localStorage
+                    deleteFromLocalStorageByPhoto(photo);
+                }
+                successCount++;
+            } catch (error) {
+                console.error('Error al eliminar foto:', error);
+            }
+        }
+        
+        // Limpiar localStorage también para sincronizar
+        if (db) {
+            let galleryLocal = JSON.parse(localStorage.getItem('weddingGallery') || '[]');
+            const idsToDelete = new Set(photosToDelete.map(p => p.id).filter(Boolean));
+            galleryLocal = galleryLocal.filter(p => !idsToDelete.has(p.id));
+            localStorage.setItem('weddingGallery', JSON.stringify(galleryLocal));
+        }
+        
+        // Desactivar modo de selección
+        disableSelectMode();
+        
+        // Recargar galería
+        await loadGallery();
+        showNotification(`${successCount} ${successCount === 1 ? 'foto eliminada' : 'fotos eliminadas'}`);
+    } catch (error) {
+        console.error('Error al eliminar fotos seleccionadas:', error);
+        showNotification('Error al eliminar las fotos');
+        disableSelectMode();
+    }
+}
+
+// Función auxiliar para eliminar de localStorage por objeto foto
+function deleteFromLocalStorageByPhoto(photo) {
+    try {
+        let gallery = JSON.parse(localStorage.getItem('weddingGallery') || '[]');
+        if (photo.id) {
+            gallery = gallery.filter(p => p.id !== photo.id);
+        } else {
+            // Si no tiene ID, buscar por URL o dataUrl
+            gallery = gallery.filter(p => 
+                (p.url || p.dataUrl) !== (photo.url || photo.dataUrl)
+            );
+        }
         localStorage.setItem('weddingGallery', JSON.stringify(gallery));
     } catch (error) {
         console.error('Error al eliminar de localStorage:', error);

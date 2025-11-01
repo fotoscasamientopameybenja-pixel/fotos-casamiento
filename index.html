@@ -46,7 +46,12 @@
                 <h2>Mi Galería</h2>
                 <div class="gallery-info">
                     <span id="photoCount">0 fotos</span>
-                    <button class="btn-danger" id="clearAllBtn" style="display: none;">Eliminar Todas</button>
+                    <div class="gallery-actions">
+                        <button class="btn-secondary" id="selectModeBtn" style="display: none;">📋 Seleccionar Fotos</button>
+                        <button class="btn-danger" id="deleteSelectedBtn" style="display: none;">🗑️ Eliminar Seleccionadas</button>
+                        <button class="btn-secondary" id="cancelSelectBtn" style="display: none;">Cancelar</button>
+                        <button class="btn-danger" id="clearAllBtn" style="display: none;">Eliminar Todas</button>
+                    </div>
                 </div>
                 <div class="gallery-grid" id="galleryGrid">
                     <div class="empty-gallery">
