@@ -13,6 +13,7 @@ const CLOUDINARY_CONFIG = {
 // Elementos del DOM
 const uploadArea = document.getElementById('uploadArea');
 const fileInput = document.getElementById('fileInput');
+const selectPhotosBtn = document.getElementById('selectPhotosBtn');
 const previewSection = document.getElementById('previewSection');
 const previewContainer = document.getElementById('previewContainer');
 const confirmBtn = document.getElementById('confirmBtn');
@@ -70,11 +71,27 @@ function setupEventListeners() {
     // Subida de archivos
     fileInput.addEventListener('change', handleFileSelect);
     
+    // Botón de seleccionar fotos
+    if (selectPhotosBtn) {
+        selectPhotosBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput.click();
+        });
+    }
+    
     // Drag and drop
     uploadArea.addEventListener('dragover', handleDragOver);
     uploadArea.addEventListener('dragleave', handleDragLeave);
     uploadArea.addEventListener('drop', handleDrop);
-    uploadArea.addEventListener('click', () => fileInput.click());
+    
+    // Hacer clickeable el área de subida (pero no el botón)
+    uploadArea.addEventListener('click', (e) => {
+        // No hacer nada si se hace clic en el botón o en el contenido
+        if (e.target === selectPhotosBtn || e.target.closest('.btn-primary')) {
+            return;
+        }
+        fileInput.click();
+    });
     
     // Botones
     confirmBtn.addEventListener('click', handleConfirmUpload);
