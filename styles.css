@@ -42,6 +42,15 @@ body::after {
     animation: float 6s ease-in-out infinite;
     pointer-events: none;
     z-index: 0;
+    will-change: transform;
+    backface-visibility: hidden;
+}
+
+/* Deshabilitar animaciones en móviles de bajo rendimiento */
+@media (max-width: 768px) and (prefers-reduced-motion: no-preference) {
+    body::after {
+        animation: none;
+    }
 }
 
 @keyframes float {
@@ -49,10 +58,10 @@ body::after {
     50% { transform: translateY(-30px) rotate(5deg); }
 }
 
-/* Animación para emojis flotantes */
+/* Animación para emojis flotantes - Optimizada */
 @keyframes floatDown {
     0% {
-        transform: translateY(-50px) rotate(0deg);
+        transform: translate3d(0, -50px, 0) rotate(0deg);
         opacity: 0;
     }
     10% {
@@ -62,7 +71,7 @@ body::after {
         opacity: 1;
     }
     100% {
-        transform: translateY(calc(100vh + 50px)) rotate(360deg);
+        transform: translate3d(0, calc(100vh + 50px), 0) rotate(360deg);
         opacity: 0;
     }
 }
@@ -76,13 +85,16 @@ body::after {
     pointer-events: none;
     z-index: 0;
     overflow: hidden;
+    contain: layout style paint;
 }
 
 .floating-emojis div {
     position: absolute;
     pointer-events: none;
     user-select: none;
-    will-change: transform;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    transform: translate3d(0, 0, 0);
 }
 
 .container {
@@ -303,11 +315,13 @@ button {
     border-radius: 12px;
     font-size: 1em;
     cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     font-weight: 600;
     position: relative;
     overflow: hidden;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    will-change: transform;
+    backface-visibility: hidden;
 }
 
 button::before {
@@ -335,8 +349,14 @@ button:hover::before {
 }
 
 .btn-primary:hover {
-    transform: translateY(-3px) scale(1.02);
+    transform: translate3d(0, -3px, 0) scale(1.02);
     box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5), 0 0 20px rgba(118, 75, 162, 0.3);
+}
+
+@media (max-width: 768px) {
+    .btn-primary:active {
+        transform: translate3d(0, -1px, 0);
+    }
 }
 
 .btn-primary:active {
@@ -542,9 +562,11 @@ button:hover::before {
     overflow: hidden;
     box-shadow: 0 8px 25px rgba(0,0,0,0.15), 0 0 0 1px rgba(255, 255, 255, 0.1);
     aspect-ratio: 1;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
     cursor: pointer;
     background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+    will-change: transform;
+    backface-visibility: hidden;
 }
 
 .gallery-item::before {
@@ -562,7 +584,7 @@ button:hover::before {
 }
 
 .gallery-item:hover {
-    transform: translateY(-8px) scale(1.03);
+    transform: translate3d(0, -8px, 0) scale(1.03);
     box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4), 0 0 30px rgba(118, 75, 162, 0.2);
 }
 
@@ -571,11 +593,23 @@ button:hover::before {
 }
 
 .gallery-item img {
-    transition: transform 0.6s ease;
+    transition: transform 0.3s ease;
+    will-change: transform;
 }
 
 .gallery-item:hover img {
-    transform: scale(1.1);
+    transform: scale3d(1.1, 1.1, 1);
+}
+
+/* Reducir efectos hover en móviles */
+@media (max-width: 768px) {
+    .gallery-item:hover {
+        transform: translate3d(0, -4px, 0);
+    }
+    
+    .gallery-item:hover img {
+        transform: scale3d(1.05, 1.05, 1);
+    }
 }
 
 .gallery-item img {

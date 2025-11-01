@@ -922,7 +922,16 @@ function closeThankYouModal() {
 
 // Crear emojis flotantes
 function createFloatingEmojis() {
-    const emojis = ['💍', '💕', '❤️', '💖', '💗', '💓', '💝', '💞', '💟', '💍', '💕', '❤️', '💖', '💗', '💓', '💝', '💞', '💟', '💍', '💕', '❤️', '💖', '💗', '💓', '💝', '💞', '💟'];
+    const emojis = ['💍', '💕', '❤️', '💖', '💗', '💓', '💝', '💞', '💟'];
+    
+    // Detectar si es móvil y rendimiento
+    const isMobile = window.innerWidth <= 768;
+    const isLowPerformance = navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2;
+    
+    // Deshabilitar emojis flotantes en móviles de bajo rendimiento
+    if (isMobile && isLowPerformance) {
+        return;
+    }
     
     // Crear contenedor para los emojis flotantes
     const floatingContainer = document.createElement('div');
@@ -936,25 +945,31 @@ function createFloatingEmojis() {
         pointer-events: none;
         z-index: 0;
         overflow: hidden;
+        will-change: contents;
     `;
     document.body.appendChild(floatingContainer);
     
-    // Crear muchos más emojis flotantes iniciales
-    for (let i = 0; i < 150; i++) {
+    // Reducir mucho más en móviles
+    const initialCount = isMobile ? 10 : 50;
+    const intervalTime = isMobile ? 5000 : 2000;
+    const batchSize = isMobile ? 1 : 3;
+    
+    // Crear emojis flotantes iniciales
+    for (let i = 0; i < initialCount; i++) {
         setTimeout(() => {
             createFloatingEmoji(floatingContainer, emojis);
-        }, i * 150); // Crear más rápido
+        }, i * 500);
     }
     
-    // Crear emojis periódicamente más frecuentemente
+    // Crear emojis periódicamente (menos frecuente en móviles)
     setInterval(() => {
-        // Crear 4-5 emojis a la vez
-        for (let j = 0; j < 5; j++) {
+        // Crear menos emojis a la vez
+        for (let j = 0; j < batchSize; j++) {
             setTimeout(() => {
                 createFloatingEmoji(floatingContainer, emojis);
-            }, j * 80);
+            }, j * 200);
         }
-    }, 1000); // Cada 1 segundo
+    }, intervalTime);
 }
 
 // Crear un emoji flotante individual
