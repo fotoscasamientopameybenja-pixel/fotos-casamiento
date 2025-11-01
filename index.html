@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galería de Recuerdos - Mi Casamiento</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💍 Galería de Recuerdos</h1>
+            <p class="subtitle">Comparte los momentos especiales de tu casamiento</p>
+        </header>
+
+        <main>
+            <!-- Sección de Subida -->
+            <section class="upload-section">
+                <h2>Subir Fotos</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <div class="upload-icon">📷</div>
+                        <p>Arrastra tus fotos aquí o haz clic para seleccionar</p>
+                        <input type="file" id="fileInput" multiple accept="image/*" hidden>
+                        <button class="btn-primary" onclick="document.getElementById('fileInput').click()">
+                            Seleccionar Fotos
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Vista Previa -->
+                <div class="preview-section" id="previewSection" style="display: none;">
+                    <h3>Vista Previa</h3>
+                    <div class="preview-container" id="previewContainer"></div>
+                    <div class="preview-actions">
+                        <button class="btn-secondary" id="cancelBtn">Cancelar</button>
+                        <button class="btn-primary" id="confirmBtn">Subir Fotos</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección de Galería -->
+            <section class="gallery-section">
+                <h2>Mi Galería</h2>
+                <div class="gallery-info">
+                    <span id="photoCount">0 fotos</span>
+                    <button class="btn-danger" id="clearAllBtn" style="display: none;">Eliminar Todas</button>
+                </div>
+                <div class="gallery-grid" id="galleryGrid">
+                    <div class="empty-gallery">
+                        <p>No hay fotos aún. ¡Sube tu primera foto para comenzar!</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
