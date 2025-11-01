@@ -90,6 +90,22 @@ function setupEventListeners() {
     confirmBtn.addEventListener('click', handleConfirmUpload);
     cancelBtn.addEventListener('click', handleCancelUpload);
     clearAllBtn.addEventListener('click', handleClearAll);
+    
+    // Modal de agradecimiento
+    const thankYouModal = document.getElementById('thankYouModal');
+    const closeThankYouBtn = document.getElementById('closeThankYouBtn');
+    
+    if (closeThankYouBtn) {
+        closeThankYouBtn.addEventListener('click', closeThankYouModal);
+    }
+    
+    if (thankYouModal) {
+        thankYouModal.addEventListener('click', (e) => {
+            if (e.target === thankYouModal) {
+                closeThankYouModal();
+            }
+        });
+    }
 }
 
 // Manejar selección de archivos
@@ -256,6 +272,9 @@ async function handleConfirmUpload() {
         
         // Recargar galería después de que todas se hayan guardado
         await loadGallery();
+        
+        // Mostrar modal de agradecimiento con el GIF
+        showThankYouModal();
         
         // Hacer scroll suave hacia la galería
         setTimeout(() => {
@@ -605,6 +624,26 @@ function openModal(imageSrc) {
 // Cerrar modal
 function closeModal() {
     const modal = document.getElementById('imageModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+// Mostrar modal de agradecimiento
+function showThankYouModal() {
+    const modal = document.getElementById('thankYouModal');
+    if (modal) {
+        modal.classList.add('active');
+        // Cerrar automáticamente después de 5 segundos
+        setTimeout(() => {
+            closeThankYouModal();
+        }, 5000);
+    }
+}
+
+// Cerrar modal de agradecimiento
+function closeThankYouModal() {
+    const modal = document.getElementById('thankYouModal');
     if (modal) {
         modal.classList.remove('active');
     }
