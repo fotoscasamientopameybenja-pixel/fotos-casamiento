@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Galería de Recuerdos - Mi Casamiento</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -55,6 +56,7 @@
                 <div class="gallery-info">
                     <span id="photoCount">0 fotos</span>
                     <div class="gallery-actions">
+                        <button class="btn-primary" id="qrCodeBtn" title="Generar código QR">📱 Código QR</button>
                         <button class="btn-secondary" id="selectModeBtn" style="display: none;">📋 Seleccionar Fotos</button>
                         <button class="btn-danger" id="deleteSelectedBtn" style="display: none;">🗑️ Eliminar Seleccionadas</button>
                         <button class="btn-secondary" id="cancelSelectBtn" style="display: none;">Cancelar</button>
@@ -76,6 +78,18 @@
             <button class="thank-you-close" id="closeThankYouBtn">&times;</button>
             <img src="Gracias Linda GIF by Nina en tu corazon.gif" alt="Gracias" class="thank-you-gif">
             <p class="thank-you-message">¡Gracias por compartir tus momentos especiales!</p>
+        </div>
+    </div>
+
+    <!-- Modal de Código QR -->
+    <div id="qrModal" class="qr-modal">
+        <div class="qr-content">
+            <button class="qr-close" id="closeQrBtn">&times;</button>
+            <h3>Código QR para Acceder</h3>
+            <p class="qr-description">Escanee este código para acceder a la galería</p>
+            <canvas id="qrcode"></canvas>
+            <p class="qr-url" id="qrUrl"></p>
+            <button class="btn-primary" id="downloadQrBtn">Descargar QR</button>
         </div>
     </div>
 
