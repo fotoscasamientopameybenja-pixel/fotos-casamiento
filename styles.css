@@ -49,6 +49,42 @@ body::after {
     50% { transform: translateY(-30px) rotate(5deg); }
 }
 
+/* Animación para emojis flotantes */
+@keyframes floatDown {
+    0% {
+        transform: translateY(-50px) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(calc(100vh + 50px)) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+.floating-emojis {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.floating-emojis div {
+    position: absolute;
+    pointer-events: none;
+    user-select: none;
+    will-change: transform;
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -61,8 +97,7 @@ header {
     color: white;
     margin-bottom: 40px;
     padding: 80px 20px;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
-    backdrop-filter: blur(10px);
+    background-color: #667eea;
     border-radius: 30px;
     position: relative;
     min-height: 700px;
@@ -76,24 +111,24 @@ header {
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* Efecto de brillo en el header */
+/* Imagen borrosa de fondo que completa todo el espacio */
 header::before {
     content: '';
     position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-    animation: rotate 20s linear infinite;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('ChatGPT Image 31 oct 2025, 09_35_52.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(10px);
+    transform: scale(1.1);
     z-index: 0;
 }
 
-@keyframes rotate {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
+/* Imagen nítida en el centro */
 header::after {
     content: '';
     position: absolute;
@@ -106,24 +141,6 @@ header::after {
     background-position: center;
     background-repeat: no-repeat;
     z-index: 1;
-    opacity: 0.9;
-    filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.3));
-}
-
-/* Fondo difuminado para la imagen */
-header .header-bg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: url('ChatGPT Image 31 oct 2025, 09_35_52.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    filter: blur(15px) brightness(0.8);
-    transform: scale(1.15);
-    z-index: 0;
 }
 
 header h1,

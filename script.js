@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await initDB();
     await loadGallery();
     setupEventListeners();
+    createFloatingEmojis();
 });
 
 // Inicializar IndexedDB
@@ -920,6 +921,69 @@ function closeThankYouModal() {
     if (modal) {
         modal.classList.remove('active');
     }
+}
+
+// Crear emojis flotantes
+function createFloatingEmojis() {
+    const emojis = ['💍', '💕', '❤️', '💖', '💗', '💓', '💝', '💞', '💟', '💍', '💕', '❤️', '💖', '💗', '💓', '💝', '💞', '💟', '💍', '💕', '❤️', '💖', '💗', '💓', '💝', '💞', '💟'];
+    
+    // Crear contenedor para los emojis flotantes
+    const floatingContainer = document.createElement('div');
+    floatingContainer.className = 'floating-emojis';
+    floatingContainer.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 0;
+        overflow: hidden;
+    `;
+    document.body.appendChild(floatingContainer);
+    
+    // Crear muchos más emojis flotantes iniciales
+    for (let i = 0; i < 80; i++) {
+        setTimeout(() => {
+            createFloatingEmoji(floatingContainer, emojis);
+        }, i * 200); // Crear más rápido
+    }
+    
+    // Crear emojis periódicamente más frecuentemente
+    setInterval(() => {
+        // Crear 2-3 emojis a la vez
+        for (let j = 0; j < 3; j++) {
+            setTimeout(() => {
+                createFloatingEmoji(floatingContainer, emojis);
+            }, j * 100);
+        }
+    }, 1500); // Cada 1.5 segundos en lugar de 3
+}
+
+// Crear un emoji flotante individual
+function createFloatingEmoji(container, emojis) {
+    const emoji = document.createElement('div');
+    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+    
+    emoji.textContent = randomEmoji;
+    emoji.style.cssText = `
+        position: absolute;
+        font-size: ${20 + Math.random() * 30}px;
+        opacity: ${0.3 + Math.random() * 0.4};
+        left: ${Math.random() * 100}%;
+        animation: floatDown ${15 + Math.random() * 10}s linear forwards;
+        pointer-events: none;
+        user-select: none;
+    `;
+    
+    container.appendChild(emoji);
+    
+    // Remover el emoji después de que termine la animación
+    setTimeout(() => {
+        if (emoji.parentNode) {
+            emoji.remove();
+        }
+    }, 25000);
 }
 
 // Mostrar notificación
