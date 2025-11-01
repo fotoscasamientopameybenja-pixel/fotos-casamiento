@@ -28,12 +28,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Inicializar IndexedDB
 function initDB() {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
+        if (!window.indexedDB) {
+            console.warn('IndexedDB no está disponible, usando localStorage');
+            resolve();
+            return;
+        }
+        
         const request = indexedDB.open(DB_NAME, DB_VERSION);
         
         request.onerror = () => {
-            console.error('Error al abrir IndexedDB');
-            reject(request.error);
+            console.warn('Error al abrir IndexedDB, usando localStorage');
+            resolve(); // No rechazamos, simplemente continuamos con localStorage
         };
         
         request.onsuccess = () => {
@@ -254,49 +260,91 @@ function handleCancelUpload() {
 // Guardar foto en la galería
 function savePhotoToGallery(photoData) {
     return new Promise((resolve, reject) => {
-        if (!db) {
-            console.error('IndexedDB no está inicializado');
-            reject('DB no inicializada');
-            return;
+        // Intentar usar IndexedDB primero
+        if (db) {
+            try {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.add(photoData);
+                
+                request.onsuccess = () => {
+                    resolve();
+                };
+                
+                request.onerror = () => {
+                    // Fallback a localStorage si IndexedDB falla
+                    saveToLocalStorage(photoData);
+                    resolve();
+                };
+                return;
+            } catch (error) {
+                // Fallback a localStorage
+                saveToLocalStorage(photoData);
+                resolve();
+                return;
+            }
         }
         
-        const transaction = db.transaction([STORE_NAME], 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
-        
-        const request = store.add(photoData);
-        
-        request.onsuccess = () => {
-            resolve();
-        };
-        
-        request.onerror = () => {
-            console.error('Error al guardar foto');
-            reject(request.error);
-        };
+        // Fallback a localStorage
+        saveToLocalStorage(photoData);
+        resolve();
     });
+}
+
+// Función auxiliar para guardar en localStorage
+function saveToLocalStorage(photoData) {
+    try {
+        let gallery = JSON.parse(localStorage.getItem('weddingGallery') || '[]');
+        gallery.push(photoData);
+        // Limpiar si es demasiado grande (más de 50 fotos)
+        if (gallery.length > 50) {
+            gallery = gallery.slice(-50);
+        }
+        localStorage.setItem('weddingGallery', JSON.stringify(gallery));
+    } catch (error) {
+        console.error('Error al guardar en localStorage:', error);
+    }
 }
 
 // Obtener todas las fotos del storage
 async function getGalleryFromStorage() {
-    return new Promise((resolve, reject) => {
-        if (!db) {
-            resolve([]);
-            return;
+    return new Promise((resolve) => {
+        // Intentar usar IndexedDB primero
+        if (db) {
+            try {
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+                
+                request.onsuccess = () => {
+                    resolve(request.result || []);
+                };
+                
+                request.onerror = () => {
+                    // Fallback a localStorage
+                    resolve(getFromLocalStorage());
+                };
+                return;
+            } catch (error) {
+                // Fallback a localStorage
+                resolve(getFromLocalStorage());
+            }
         }
         
-        const transaction = db.transaction([STORE_NAME], 'readonly');
-        const store = transaction.objectStore(STORE_NAME);
-        const request = store.getAll();
-        
-        request.onsuccess = () => {
-            resolve(request.result || []);
-        };
-        
-        request.onerror = () => {
-            console.error('Error al obtener fotos');
-            resolve([]);
-        };
+        // Fallback a localStorage
+        resolve(getFromLocalStorage());
     });
+}
+
+// Función auxiliar para obtener de localStorage
+function getFromLocalStorage() {
+    try {
+        const gallery = localStorage.getItem('weddingGallery');
+        return gallery ? JSON.parse(gallery) : [];
+    } catch (error) {
+        console.error('Error al leer localStorage:', error);
+        return [];
+    }
 }
 
 // Cargar galería
@@ -353,27 +401,56 @@ async function deletePhotoFromGallery(index) {
         const gallery = await getGalleryFromStorage();
         const photoToDelete = gallery[index];
         
-        if (!photoToDelete || !photoToDelete.id) {
+        if (!photoToDelete) {
             console.error('No se encontró la foto para eliminar');
             return;
         }
         
-        const transaction = db.transaction([STORE_NAME], 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
-        const request = store.delete(photoToDelete.id);
-        
-        request.onsuccess = async () => {
-            await loadGallery();
+        // Intentar usar IndexedDB
+        if (db && photoToDelete.id) {
+            try {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.delete(photoToDelete.id);
+                
+                request.onsuccess = async () => {
+                    await loadGallery();
+                    showNotification('Foto eliminada');
+                };
+                
+                request.onerror = () => {
+                    // Fallback a localStorage
+                    deleteFromLocalStorage(index);
+                    loadGallery();
+                    showNotification('Foto eliminada');
+                };
+                return;
+            } catch (error) {
+                // Fallback a localStorage
+                deleteFromLocalStorage(index);
+                loadGallery();
+                showNotification('Foto eliminada');
+            }
+        } else {
+            // Usar localStorage
+            deleteFromLocalStorage(index);
+            loadGallery();
             showNotification('Foto eliminada');
-        };
-        
-        request.onerror = () => {
-            console.error('Error al eliminar foto');
-            showNotification('Error al eliminar la foto');
-        };
+        }
     } catch (error) {
         console.error('Error:', error);
         showNotification('Error al eliminar la foto');
+    }
+}
+
+// Función auxiliar para eliminar de localStorage
+function deleteFromLocalStorage(index) {
+    try {
+        let gallery = JSON.parse(localStorage.getItem('weddingGallery') || '[]');
+        gallery.splice(index, 1);
+        localStorage.setItem('weddingGallery', JSON.stringify(gallery));
+    } catch (error) {
+        console.error('Error al eliminar de localStorage:', error);
     }
 }
 
@@ -381,19 +458,37 @@ async function deletePhotoFromGallery(index) {
 async function handleClearAll() {
     if (confirm('¿Estás seguro de que quieres eliminar todas las fotos? Esta acción no se puede deshacer.')) {
         try {
-            const transaction = db.transaction([STORE_NAME], 'readwrite');
-            const store = transaction.objectStore(STORE_NAME);
-            const request = store.clear();
-            
-            request.onsuccess = async () => {
+            // Intentar usar IndexedDB
+            if (db) {
+                try {
+                    const transaction = db.transaction([STORE_NAME], 'readwrite');
+                    const store = transaction.objectStore(STORE_NAME);
+                    const request = store.clear();
+                    
+                    request.onsuccess = async () => {
+                        localStorage.removeItem('weddingGallery');
+                        await loadGallery();
+                        showNotification('Todas las fotos han sido eliminadas');
+                    };
+                    
+                    request.onerror = () => {
+                        localStorage.removeItem('weddingGallery');
+                        loadGallery();
+                        showNotification('Todas las fotos han sido eliminadas');
+                    };
+                    return;
+                } catch (error) {
+                    // Fallback
+                    localStorage.removeItem('weddingGallery');
+                    loadGallery();
+                    showNotification('Todas las fotos han sido eliminadas');
+                }
+            } else {
+                // Usar localStorage
+                localStorage.removeItem('weddingGallery');
                 await loadGallery();
                 showNotification('Todas las fotos han sido eliminadas');
-            };
-            
-            request.onerror = () => {
-                console.error('Error al eliminar todas las fotos');
-                showNotification('Error al eliminar las fotos');
-            };
+            }
         } catch (error) {
             console.error('Error:', error);
             showNotification('Error al eliminar las fotos');
