@@ -71,82 +71,25 @@ function setupEventListeners() {
     // Subida de archivos
     fileInput.addEventListener('change', handleFileSelect);
     
-    // Botón de seleccionar fotos - Configuración directa y simple
+    // Botón de seleccionar fotos - Simple y directo
     if (selectPhotosBtn) {
-        // Remover todos los listeners anteriores si existen
-        const newBtn = selectPhotosBtn.cloneNode(true);
-        selectPhotosBtn.parentNode.replaceChild(newBtn, selectPhotosBtn);
-        const btn = document.getElementById('selectPhotosBtn');
-        
-        // Agregar listener simple y directo
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            console.log('=== BOTÓN CLICADO ===');
-            console.log('fileInput:', fileInput);
-            if (fileInput) {
-                console.log('Intentando abrir fileInput...');
-                try {
-                    fileInput.click();
-                    console.log('fileInput.click() ejecutado');
-                } catch (error) {
-                    console.error('Error al hacer click en fileInput:', error);
-                }
-            } else {
-                console.error('fileInput no encontrado');
-            }
-            return false;
+        selectPhotosBtn.addEventListener('click', function() {
+            fileInput.click();
         });
-        
-        // También onclick directo como backup absoluto
-        btn.onclick = function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('=== ONCLICK DIRECTO ===');
-            if (fileInput) {
-                fileInput.click();
-            }
-            return false;
-        };
-        
-        console.log('Botón configurado:', btn);
-    } else {
-        console.error('selectPhotosBtn no encontrado');
     }
     
     // Drag and drop
     uploadArea.addEventListener('dragover', handleDragOver);
     uploadArea.addEventListener('dragleave', handleDragLeave);
     uploadArea.addEventListener('drop', handleDrop);
-    
-    // Hacer clickeable el área de subida (pero NO el botón)
-    uploadArea.addEventListener('click', function(e) {
-        // Ignorar completamente cualquier click en el botón o elementos button
-        const clickedElement = e.target;
-        if (clickedElement.tagName === 'BUTTON' || 
-            clickedElement.id === 'selectPhotosBtn' ||
-            clickedElement.closest('button') ||
-            clickedElement.closest('#selectPhotosBtn')) {
-            console.log('Click en área ignorado (es el botón)');
-            return;
-        }
-        console.log('Click en área (no es botón)');
-        if (fileInput) {
-            fileInput.click();
-        }
-    }, false); // No usar capture para que el botón tenga prioridad
+    uploadArea.addEventListener('click', function() {
+        fileInput.click();
+    });
     
     // Botones
     confirmBtn.addEventListener('click', handleConfirmUpload);
     cancelBtn.addEventListener('click', handleCancelUpload);
     clearAllBtn.addEventListener('click', handleClearAll);
-    
-    // Verificar que todo esté configurado
-    console.log('=== EVENT LISTENERS CONFIGURADOS ===');
-    console.log('selectPhotosBtn:', document.getElementById('selectPhotosBtn'));
-    console.log('fileInput:', fileInput);
-    console.log('uploadArea:', uploadArea);
 }
 
 // Manejar selección de archivos

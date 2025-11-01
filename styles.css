@@ -102,6 +102,22 @@ section h2 {
     padding-bottom: 10px;
 }
 
+/* Sección de Subida */
+.upload-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Botón de Seleccionar Fotos */
+.btn-upload {
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+    font-size: 1.1em;
+    padding: 15px 30px;
+}
+
 /* Área de Subida */
 .upload-area {
     border: 3px dashed #667eea;
@@ -128,19 +144,6 @@ section h2 {
     pointer-events: none;
 }
 
-.upload-content * {
-    pointer-events: none;
-}
-
-/* El botón debe ser clickeable */
-#selectPhotosBtn {
-    pointer-events: auto !important;
-    position: relative !important;
-    z-index: 9999 !important;
-    cursor: pointer !important;
-    display: inline-block !important;
-}
-
 .upload-icon {
     font-size: 4em;
     margin-bottom: 20px;
@@ -149,7 +152,6 @@ section h2 {
 .upload-area p {
     font-size: 1.1em;
     color: #666;
-    margin-bottom: 20px;
 }
 
 /* Botones */
