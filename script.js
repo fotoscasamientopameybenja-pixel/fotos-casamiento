@@ -27,11 +27,6 @@ const progressPercent = document.getElementById('progressPercent');
 const selectModeBtn = document.getElementById('selectModeBtn');
 const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
 const cancelSelectBtn = document.getElementById('cancelSelectBtn');
-const qrCodeBtn = document.getElementById('qrCodeBtn');
-const qrModal = document.getElementById('qrModal');
-const closeQrBtn = document.getElementById('closeQrBtn');
-const downloadQrBtn = document.getElementById('downloadQrBtn');
-const qrUrl = document.getElementById('qrUrl');
 
 // Modo de selección
 let isSelectMode = false;
@@ -113,24 +108,6 @@ function setupEventListeners() {
     }
     if (cancelSelectBtn) {
         cancelSelectBtn.addEventListener('click', disableSelectMode);
-    }
-    
-    // Botón de código QR
-    if (qrCodeBtn) {
-        qrCodeBtn.addEventListener('click', showQRCode);
-    }
-    if (closeQrBtn) {
-        closeQrBtn.addEventListener('click', closeQRModal);
-    }
-    if (downloadQrBtn) {
-        downloadQrBtn.addEventListener('click', downloadQRCode);
-    }
-    if (qrModal) {
-        qrModal.addEventListener('click', (e) => {
-            if (e.target === qrModal) {
-                closeQRModal();
-            }
-        });
     }
     
     // Modal de agradecimiento
@@ -941,64 +918,6 @@ function closeThankYouModal() {
     if (modal) {
         modal.classList.remove('active');
     }
-}
-
-// Mostrar código QR
-function showQRCode() {
-    if (!window.QRCode) {
-        showNotification('Error: La librería de QR no está cargada', 'error');
-        return;
-    }
-    
-    const canvas = document.getElementById('qrcode');
-    const currentUrl = window.location.href;
-    
-    // Mostrar URL en el modal
-    if (qrUrl) {
-        qrUrl.textContent = currentUrl;
-    }
-    
-    // Limpiar canvas anterior
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Generar código QR
-    QRCode.toCanvas(canvas, currentUrl, {
-        width: 300,
-        margin: 2,
-        color: {
-            dark: '#667eea',
-            light: '#ffffff'
-        }
-    }, (error) => {
-        if (error) {
-            console.error('Error al generar QR:', error);
-            showNotification('Error al generar el código QR', 'error');
-            return;
-        }
-        
-        // Mostrar modal
-        if (qrModal) {
-            qrModal.classList.add('active');
-        }
-    });
-}
-
-// Cerrar modal de QR
-function closeQRModal() {
-    if (qrModal) {
-        qrModal.classList.remove('active');
-    }
-}
-
-// Descargar código QR
-function downloadQRCode() {
-    const canvas = document.getElementById('qrcode');
-    const link = document.createElement('a');
-    link.download = 'codigo-qr-galeria.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-    showNotification('Código QR descargado');
 }
 
 // Crear emojis flotantes
