@@ -11,7 +11,6 @@ const CLOUDINARY_CONFIG = {
 };
 
 // Elementos del DOM
-const uploadArea = document.getElementById('uploadArea');
 const fileInput = document.getElementById('fileInput');
 const selectPhotosBtn = document.getElementById('selectPhotosBtn');
 const previewSection = document.getElementById('previewSection');
@@ -90,13 +89,10 @@ function setupEventListeners() {
         });
     }
     
-    // Drag and drop
-    uploadArea.addEventListener('dragover', handleDragOver);
-    uploadArea.addEventListener('dragleave', handleDragLeave);
-    uploadArea.addEventListener('drop', handleDrop);
-    uploadArea.addEventListener('click', function() {
-        fileInput.click();
-    });
+    // Drag and drop en el body (sin área visual)
+    document.body.addEventListener('dragover', handleDragOver);
+    document.body.addEventListener('dragleave', handleDragLeave);
+    document.body.addEventListener('drop', handleDrop);
     
     // Botones
     confirmBtn.addEventListener('click', handleConfirmUpload);
@@ -140,21 +136,22 @@ function handleFileSelect(e) {
 // Manejar drag over
 function handleDragOver(e) {
     e.preventDefault();
-    uploadArea.classList.add('dragover');
+    // Sin área visual, solo permitir el drop
 }
 
 // Manejar drag leave
 function handleDragLeave(e) {
     e.preventDefault();
-    uploadArea.classList.remove('dragover');
+    // Sin área visual, no hay nada que cambiar
 }
 
 // Manejar drop
 function handleDrop(e) {
     e.preventDefault();
-    uploadArea.classList.remove('dragover');
     const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
-    addFilesToPreview(files);
+    if (files.length > 0) {
+        addFilesToPreview(files);
+    }
 }
 
 // Añadir archivos a la vista previa
