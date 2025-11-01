@@ -2,6 +2,14 @@
 let selectedFiles = [];
 const maxFileSize = 10 * 1024 * 1024; // 10MB
 
+// Configuración de Cloudinary
+const CLOUDINARY_CONFIG = {
+    cloudName: 'dm0dh7iqb',
+    apiKey: '346395192943891',
+    apiSecret: 'yE2yQEAASfvKYSeSENBib-uclJg',
+    uploadPreset: null // Usaremos signed upload
+};
+
 // Elementos del DOM
 const uploadArea = document.getElementById('uploadArea');
 const fileInput = document.getElementById('fileInput');
@@ -185,67 +193,100 @@ async function handleConfirmUpload() {
     
     let processedCount = 0;
     const totalFiles = selectedFiles.length;
-    const savePromises = [];
     
-    selectedFiles.forEach((file, index) => {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                const photoData = {
-                    id: Date.now() + Math.random() + index,
-                    dataUrl: e.target.result,
-                    name: file.name,
-                    date: new Date().toISOString()
-                };
-                
-                await savePhotoToGallery(photoData);
-                
-                processedCount++;
-                // Cuando todas las fotos se hayan procesado, recargar la galería
-                if (processedCount === totalFiles) {
-                    // Limpiar vista previa
-                    selectedFiles = [];
-                    previewContainer.innerHTML = '';
-                    previewSection.style.display = 'none';
-                    fileInput.value = '';
-                    
-                    // Mostrar mensaje de éxito
-                    showNotification('¡Fotos subidas correctamente!');
-                    
-                    // Recargar galería después de que todas se hayan guardado
-                    await loadGallery();
-                    
-                    // Hacer scroll suave hacia la galería
-                    setTimeout(() => {
-                        document.querySelector('.gallery-section').scrollIntoView({ 
-                            behavior: 'smooth', 
-                            block: 'start' 
-                        });
-                    }, 100);
-                }
-            } catch (error) {
-                console.error('Error al guardar foto:', error);
-                processedCount++;
-                if (processedCount === totalFiles) {
-                    selectedFiles = [];
-                    previewContainer.innerHTML = '';
-                    previewSection.style.display = 'none';
-                    fileInput.value = '';
-                    await loadGallery();
-                }
-            }
-        };
-        reader.onerror = async () => {
+    // Mostrar mensaje de carga
+    showNotification('Subiendo fotos a Cloudinary...');
+    
+    // Deshabilitar botón mientras sube
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Subiendo...';
+    
+    for (let index = 0; index < selectedFiles.length; index++) {
+        const file = selectedFiles[index];
+        
+        try {
+            // Subir a Cloudinary
+            const cloudinaryUrl = await uploadToCloudinary(file);
+            
+            // Guardar los datos de la foto (URL de Cloudinary en lugar de dataUrl)
+            const photoData = {
+                id: Date.now() + Math.random() + index,
+                url: cloudinaryUrl,
+                name: file.name,
+                date: new Date().toISOString(),
+                cloudinary: true
+            };
+            
+            await savePhotoToGallery(photoData);
+            
             processedCount++;
-            if (processedCount === totalFiles) {
-                selectedFiles = [];
-                previewContainer.innerHTML = '';
-                previewSection.style.display = 'none';
-                fileInput.value = '';
-                await loadGallery();
+            
+        } catch (error) {
+            console.error('Error al subir foto:', error);
+            showNotification(`Error al subir ${file.name}. Intentando continuar...`);
+            processedCount++;
+        }
+    }
+    
+    // Cuando todas las fotos se hayan procesado, recargar la galería
+    if (processedCount === totalFiles) {
+        // Limpiar vista previa
+        selectedFiles = [];
+        previewContainer.innerHTML = '';
+        previewSection.style.display = 'none';
+        fileInput.value = '';
+        
+        // Rehabilitar botón
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Subir Fotos';
+        
+        // Mostrar mensaje de éxito
+        showNotification('¡Fotos subidas correctamente a Cloudinary!');
+        
+        // Recargar galería después de que todas se hayan guardado
+        await loadGallery();
+        
+        // Hacer scroll suave hacia la galería
+        setTimeout(() => {
+            document.querySelector('.gallery-section').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+            });
+        }, 100);
+    }
+}
+
+// Subir foto a Cloudinary
+async function uploadToCloudinary(file) {
+    return new Promise((resolve, reject) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', 'ml_default'); // Necesitas crear un preset sin firma en Cloudinary Dashboard
+        
+        fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/image/upload`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(errorData => {
+                    console.error('Error de Cloudinary:', errorData);
+                    throw new Error(`Error HTTP: ${response.status} - ${errorData.error?.message || 'Error desconocido'}`);
+                });
             }
-        };
-        reader.readAsDataURL(file);
+            return response.json();
+        })
+        .then(data => {
+            if (data.secure_url || data.url) {
+                resolve(data.secure_url || data.url);
+            } else {
+                reject(new Error('No se recibió URL de Cloudinary'));
+            }
+        })
+        .catch(error => {
+            console.error('Error en upload a Cloudinary:', error);
+            reject(error);
+        });
     });
 }
 
@@ -375,9 +416,10 @@ function createGalleryItem(photo, index) {
     div.dataset.photoIndex = index;
     
     const img = document.createElement('img');
-    img.src = photo.dataUrl;
+    img.src = photo.url || photo.dataUrl;
     img.alt = photo.name || 'Foto';
-    img.onclick = () => openModal(photo.dataUrl);
+    const imageSrc = photo.url || photo.dataUrl;
+    img.onclick = () => openModal(imageSrc);
     
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'delete-btn';
