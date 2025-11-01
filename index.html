@@ -17,14 +17,14 @@
             <!-- Sección de Subida -->
             <section class="upload-section">
                 <h2>Subir Fotos</h2>
+                <input type="file" id="fileInput" multiple accept="image/*" hidden>
+                <button class="btn-primary" id="selectPhotosBtn" type="button" style="margin-bottom: 20px;">
+                    Seleccionar Fotos
+                </button>
                 <div class="upload-area" id="uploadArea">
                     <div class="upload-content">
                         <div class="upload-icon">📷</div>
                         <p>Arrastra tus fotos aquí o haz clic para seleccionar</p>
-                        <input type="file" id="fileInput" multiple accept="image/*" hidden>
-                        <button class="btn-primary" id="selectPhotosBtn" type="button" style="pointer-events: auto !important; position: relative; z-index: 100;">
-                            Seleccionar Fotos
-                        </button>
                     </div>
                 </div>
 

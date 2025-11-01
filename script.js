@@ -71,27 +71,48 @@ function setupEventListeners() {
     // Subida de archivos
     fileInput.addEventListener('change', handleFileSelect);
     
-    // Botón de seleccionar fotos - Prioridad alta
+    // Botón de seleccionar fotos - Configuración directa y simple
     if (selectPhotosBtn) {
-        selectPhotosBtn.addEventListener('click', function(e) {
+        // Remover todos los listeners anteriores si existen
+        const newBtn = selectPhotosBtn.cloneNode(true);
+        selectPhotosBtn.parentNode.replaceChild(newBtn, selectPhotosBtn);
+        const btn = document.getElementById('selectPhotosBtn');
+        
+        // Agregar listener simple y directo
+        btn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
-            console.log('Botón clicado');
+            console.log('=== BOTÓN CLICADO ===');
+            console.log('fileInput:', fileInput);
             if (fileInput) {
-                fileInput.click();
+                console.log('Intentando abrir fileInput...');
+                try {
+                    fileInput.click();
+                    console.log('fileInput.click() ejecutado');
+                } catch (error) {
+                    console.error('Error al hacer click en fileInput:', error);
+                }
+            } else {
+                console.error('fileInput no encontrado');
             }
-        }, true); // useCapture = true para capturar primero
+            return false;
+        });
         
-        // También con onclick directo como backup
-        selectPhotosBtn.onclick = function(e) {
+        // También onclick directo como backup absoluto
+        btn.onclick = function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Onclick directo');
+            console.log('=== ONCLICK DIRECTO ===');
             if (fileInput) {
                 fileInput.click();
             }
+            return false;
         };
+        
+        console.log('Botón configurado:', btn);
+    } else {
+        console.error('selectPhotosBtn no encontrado');
     }
     
     // Drag and drop
@@ -99,19 +120,22 @@ function setupEventListeners() {
     uploadArea.addEventListener('dragleave', handleDragLeave);
     uploadArea.addEventListener('drop', handleDrop);
     
-    // Hacer clickeable el área de subida (pero no el botón ni su contenedor)
+    // Hacer clickeable el área de subida (pero NO el botón)
     uploadArea.addEventListener('click', function(e) {
-        // No hacer nada si se hace clic en el botón, en un botón, o en el contenedor del botón
-        if (e.target === selectPhotosBtn || 
-            e.target.closest('.btn-primary') || 
-            e.target.closest('#selectPhotosBtn') ||
-            e.target.tagName === 'BUTTON') {
+        // Ignorar completamente cualquier click en el botón o elementos button
+        const clickedElement = e.target;
+        if (clickedElement.tagName === 'BUTTON' || 
+            clickedElement.id === 'selectPhotosBtn' ||
+            clickedElement.closest('button') ||
+            clickedElement.closest('#selectPhotosBtn')) {
+            console.log('Click en área ignorado (es el botón)');
             return;
         }
+        console.log('Click en área (no es botón)');
         if (fileInput) {
             fileInput.click();
         }
-    });
+    }, false); // No usar capture para que el botón tenga prioridad
     
     // Botones
     confirmBtn.addEventListener('click', handleConfirmUpload);
@@ -119,9 +143,10 @@ function setupEventListeners() {
     clearAllBtn.addEventListener('click', handleClearAll);
     
     // Verificar que todo esté configurado
-    console.log('Event listeners configurados');
-    console.log('selectPhotosBtn:', selectPhotosBtn);
+    console.log('=== EVENT LISTENERS CONFIGURADOS ===');
+    console.log('selectPhotosBtn:', document.getElementById('selectPhotosBtn'));
     console.log('fileInput:', fileInput);
+    console.log('uploadArea:', uploadArea);
 }
 
 // Manejar selección de archivos

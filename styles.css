@@ -125,21 +125,20 @@ section h2 {
 }
 
 .upload-content {
-    pointer-events: auto;
-    position: relative;
-    z-index: 5;
+    pointer-events: none;
 }
 
-.upload-content .btn-primary,
+.upload-content * {
+    pointer-events: none;
+}
+
+/* El botón debe ser clickeable */
 #selectPhotosBtn {
     pointer-events: auto !important;
     position: relative !important;
-    z-index: 100 !important;
+    z-index: 9999 !important;
     cursor: pointer !important;
-}
-
-#selectPhotosBtn {
-    pointer-events: auto !important;
+    display: inline-block !important;
 }
 
 .upload-icon {
