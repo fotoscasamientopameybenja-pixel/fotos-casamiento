@@ -223,7 +223,8 @@ async function handleConfirmUpload() {
             
         } catch (error) {
             console.error('Error al subir foto:', error);
-            showNotification(`Error al subir ${file.name}. Intentando continuar...`);
+            const errorMsg = error.message || 'Error desconocido';
+            showNotification(`Error: ${file.name} - ${errorMsg}`, 'error');
             processedCount++;
         }
     }
@@ -259,34 +260,53 @@ async function handleConfirmUpload() {
 // Subir foto a Cloudinary
 async function uploadToCloudinary(file) {
     return new Promise((resolve, reject) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', 'ml_default'); // Necesitas crear un preset sin firma en Cloudinary Dashboard
-        
-        fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/image/upload`, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(errorData => {
-                    console.error('Error de Cloudinary:', errorData);
-                    throw new Error(`Error HTTP: ${response.status} - ${errorData.error?.message || 'Error desconocido'}`);
-                });
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.secure_url || data.url) {
-                resolve(data.secure_url || data.url);
-            } else {
-                reject(new Error('No se recibió URL de Cloudinary'));
-            }
-        })
-        .catch(error => {
-            console.error('Error en upload a Cloudinary:', error);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', 'ml_default'); // Preset sin firma configurado en Cloudinary
+            
+            const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/image/upload`;
+            
+            fetch(uploadUrl, {
+                method: 'POST',
+                body: formData,
+                mode: 'cors' // Asegurar que CORS funcione
+            })
+            .then(response => {
+                if (!response.ok) {
+                    // Intentar leer el error
+                    return response.text().then(text => {
+                        let errorMessage = `Error HTTP: ${response.status}`;
+                        try {
+                            const errorData = JSON.parse(text);
+                            errorMessage = errorData.error?.message || errorData.message || errorMessage;
+                            console.error('Error de Cloudinary:', errorData);
+                        } catch (e) {
+                            console.error('Error de Cloudinary (texto):', text);
+                            errorMessage = text || errorMessage;
+                        }
+                        throw new Error(errorMessage);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.secure_url || data.url) {
+                    console.log('Foto subida exitosamente a Cloudinary:', data.secure_url || data.url);
+                    resolve(data.secure_url || data.url);
+                } else {
+                    console.error('Respuesta de Cloudinary sin URL:', data);
+                    reject(new Error('No se recibió URL de Cloudinary en la respuesta'));
+                }
+            })
+            .catch(error => {
+                console.error('Error en upload a Cloudinary:', error);
+                reject(error);
+            });
+        } catch (error) {
+            console.error('Error al preparar upload:', error);
             reject(error);
-        });
+        }
     });
 }
 
@@ -581,33 +601,40 @@ function closeModal() {
 }
 
 // Mostrar notificación
-function showNotification(message) {
+function showNotification(message, type = 'success') {
     // Crear notificación si no existe
     let notification = document.getElementById('notification');
     if (!notification) {
         notification = document.createElement('div');
         notification.id = 'notification';
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #28a745;
-            color: white;
-            padding: 15px 25px;
-            border-radius: 8px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            z-index: 2000;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        `;
         document.body.appendChild(notification);
     }
+    
+    // Configurar estilos según el tipo
+    const bgColor = type === 'error' ? '#dc3545' : '#28a745';
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${bgColor};
+        color: white;
+        padding: 15px 25px;
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        z-index: 2000;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        max-width: 400px;
+        word-wrap: break-word;
+    `;
     
     notification.textContent = message;
     notification.style.opacity = '1';
     
+    const duration = type === 'error' ? 5000 : 3000;
+    
     setTimeout(() => {
         notification.style.opacity = '0';
-    }, 3000);
+    }, duration);
 }
 

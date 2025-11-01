@@ -35,7 +35,7 @@ Las credenciales están en el código JavaScript. Si prefieres usar variables de
 
 ## Credenciales actuales
 
-- Cloud name: `dm0dh7iqb`
+- ame: Cloud n`dm0dh7iqb`
 - API Key: `346395192943891`
 - API Secret: `yE2yQEAASfvKYSeSENBib-uclJg` (no se usa en el frontend)
 
