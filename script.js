@@ -943,21 +943,21 @@ function createFloatingEmojis() {
     document.body.appendChild(floatingContainer);
     
     // Crear muchos más emojis flotantes iniciales
-    for (let i = 0; i < 80; i++) {
+    for (let i = 0; i < 150; i++) {
         setTimeout(() => {
             createFloatingEmoji(floatingContainer, emojis);
-        }, i * 200); // Crear más rápido
+        }, i * 150); // Crear más rápido
     }
     
     // Crear emojis periódicamente más frecuentemente
     setInterval(() => {
-        // Crear 2-3 emojis a la vez
-        for (let j = 0; j < 3; j++) {
+        // Crear 4-5 emojis a la vez
+        for (let j = 0; j < 5; j++) {
             setTimeout(() => {
                 createFloatingEmoji(floatingContainer, emojis);
-            }, j * 100);
+            }, j * 80);
         }
-    }, 1500); // Cada 1.5 segundos en lugar de 3
+    }, 1000); // Cada 1 segundo
 }
 
 // Crear un emoji flotante individual
