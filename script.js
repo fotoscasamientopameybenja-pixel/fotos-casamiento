@@ -21,6 +21,10 @@ const cancelBtn = document.getElementById('cancelBtn');
 const galleryGrid = document.getElementById('galleryGrid');
 const photoCount = document.getElementById('photoCount');
 const clearAllBtn = document.getElementById('clearAllBtn');
+const progressSection = document.getElementById('progressSection');
+const progressBar = document.getElementById('progressBar');
+const progressText = document.getElementById('progressText');
+const progressPercent = document.getElementById('progressPercent');
 const selectModeBtn = document.getElementById('selectModeBtn');
 const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
 const cancelSelectBtn = document.getElementById('cancelSelectBtn');
@@ -238,12 +242,19 @@ async function handleConfirmUpload() {
     let processedCount = 0;
     const totalFiles = selectedFiles.length;
     
+    // Mostrar barra de progreso
+    if (progressSection) {
+        progressSection.style.display = 'block';
+    }
+    updateProgress(0, totalFiles);
+    
     // Mostrar mensaje de carga
     showNotification('Subiendo fotos a Cloudinary...');
     
     // Deshabilitar botón mientras sube
     confirmBtn.disabled = true;
     confirmBtn.textContent = 'Subiendo...';
+    cancelBtn.disabled = true;
     
     for (let index = 0; index < selectedFiles.length; index++) {
         const file = selectedFiles[index];
@@ -265,25 +276,37 @@ async function handleConfirmUpload() {
             
             processedCount++;
             
+            // Actualizar barra de progreso
+            updateProgress(processedCount, totalFiles);
+            
         } catch (error) {
             console.error('Error al subir foto:', error);
             const errorMsg = error.message || 'Error desconocido';
             showNotification(`Error: ${file.name} - ${errorMsg}`, 'error');
             processedCount++;
+            
+            // Actualizar barra de progreso incluso si hay error
+            updateProgress(processedCount, totalFiles);
         }
     }
     
     // Cuando todas las fotos se hayan procesado, recargar la galería
     if (processedCount === totalFiles) {
+        // Ocultar barra de progreso
+        if (progressSection) {
+            progressSection.style.display = 'none';
+        }
+        
         // Limpiar vista previa
         selectedFiles = [];
         previewContainer.innerHTML = '';
         previewSection.style.display = 'none';
         fileInput.value = '';
         
-        // Rehabilitar botón
+        // Rehabilitar botones
         confirmBtn.disabled = false;
         confirmBtn.textContent = 'Subir Fotos';
+        cancelBtn.disabled = false;
         
         // Mostrar mensaje de éxito
         showNotification('¡Fotos subidas correctamente a Cloudinary!');
@@ -301,6 +324,29 @@ async function handleConfirmUpload() {
                 block: 'start' 
             });
         }, 100);
+    }
+}
+
+// Actualizar barra de progreso
+function updateProgress(current, total) {
+    if (!progressBar || !progressText || !progressPercent) return;
+    
+    const percentage = Math.round((current / total) * 100);
+    
+    // Actualizar texto del contador (ej: 1/6, 2/6, etc.)
+    progressText.textContent = `${current}/${total}`;
+    
+    // Actualizar porcentaje
+    progressPercent.textContent = `${percentage}%`;
+    
+    // Actualizar ancho de la barra
+    progressBar.style.width = `${percentage}%`;
+    
+    // Mostrar texto dentro de la barra
+    if (percentage > 10) {
+        progressBar.textContent = `${percentage}%`;
+    } else {
+        progressBar.textContent = '';
     }
 }
 
@@ -363,6 +409,20 @@ function handleCancelUpload() {
     previewContainer.innerHTML = '';
     previewSection.style.display = 'none';
     fileInput.value = '';
+    
+    // Ocultar barra de progreso si está visible
+    if (progressSection) {
+        progressSection.style.display = 'none';
+    }
+    
+    // Rehabilitar botones
+    if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Subir Fotos';
+    }
+    if (cancelBtn) {
+        cancelBtn.disabled = false;
+    }
 }
 
 // Guardar foto en la galería
